@@ -1,0 +1,3 @@
+http://blog.naver.com/PostView.nhn?blogId=icbanq&logNo=220918434473 - 조도 센서
+https://backback.tistory.com/29 - 조도 센서
+http://makeshare.org/bbs/board.php?bo_table=arduino&wr_id=30 - 온습도 센서
