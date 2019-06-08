@@ -65,39 +65,6 @@ class Raindrop
   }
 }
 
-class Timer extends Thread
-{
-  boolean isRun = true;
-  void run()
-  {
-    while (isRun)
-    {
-      try
-      {
-        targetRaindrop = (int)random(-800, 800);
-        if (targetRaindrop < 0)
-        {
-          targetRaindrop = 0;
-        }
-        sleep(5000);
-      }
-      catch(InterruptedException e)
-      {
-        e.printStackTrace();
-      }
-    }
-  }
-
-  boolean isRun()
-  {
-    return isRun;
-  }
-
-  void timerStop()
-  {
-    isRun = false;
-  }
-}
 
 class DropReduce extends Thread
 {
@@ -186,10 +153,20 @@ class Values extends Thread
         try
         {
           delay(1000);
-          for (int i=0; i<8; i++)
+          
+          data = p.read();
+          if((byte)data != 126)
           {
-            data = p.read();
-            buffer[i] = (byte)data;
+            continue;
+          }
+          else
+          {
+            buffer[0] = (byte)data;
+            for (int i=1; i<8; i++)
+            {
+              data = p.read();
+              buffer[i] = (byte)data;
+            }
           }
 
           if ((buffer[0] != 126) || (buffer[7] != 127))
@@ -298,9 +275,7 @@ float temp = 0;
 float aheight=0;
 
 boolean cloudFlags = true;
-Timer timer;
 Values vs = null;
-Serial p = null;
 
 void setup()
 {
@@ -333,17 +308,14 @@ void setup()
 
   sink.start();
   reduce.start();
-  timer.timerStop();
 
-  vs = new Values(new Serial(this, "COM3", 9600));
+  vs = new Values(new Serial(this, "COM5", 9600));
   vs.start();
 }
 
 void draw()
 { 
   background(120, 85, 0);
-
-
 
   translate(575, 400);
   rotateX(rotX);
@@ -459,19 +431,33 @@ void draw()
 
   if (vs.getReady())
   {
+    aheight+=0.1;
+    if((cloudHeight+500)*sin(radians(aheight))>=cloudHeight){
     pushMatrix();
     fill(255, 255, 0);
-    translate(800*(cos(radians(aheight))), -200, 850*sin(radians(aheight)));
+    translate(2000*(cos(radians(aheight))), -200, (cloudHeight+500)*sin(radians(aheight)));
     sphere(vs.getTemp()*5);
-    pointLight(vs.getIlluminance()/3, vs.getIlluminance()/3, vs.getIlluminance()/3, 800*cos(radians(aheight)), -200, 850*sin(radians(aheight)));
-    aheight+=0.1;
+    pointLight(vs.getIlluminance()/2, vs.getIlluminance()/2, vs.getIlluminance()/2, 2000*cos(radians(aheight)), -200, (cloudHeight+500)*sin(radians(aheight)));
     popMatrix();
+    }
+    else
+    {
+      pointLight(0, 0, 0, 2000*cos(radians(aheight)), -200, (cloudHeight+500)*sin(radians(aheight)));
+    }
   }
 
 
-  sinkRate = vs.getTemp()/200;
-  targetRaindrop = (int)(1000*(vs.getHumidity()/100));
+  sinkRate = (vs.getTemp()/200);
   cloudCount = 1000-vs.getIlluminance();
+  if(targetRaindrop>=cloudCount&&vs.getHumidity()<=50)
+  {
+    targetRaindrop = (int)cloudCount;
+  }
+  else
+  {
+  targetRaindrop = (int)(1000*(vs.getHumidity()/100));
+  }
+  
 
   for (int y=0; y<rows-1; y++)
   {
